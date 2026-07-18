@@ -47,6 +47,7 @@ dev = [
     "typer>=0.12",
     "prometheus-client>=0.20",
     "httpx>=0.27",        # for future FastAPI integration tests
+    "fastapi>=0.100.0",   # required for mypy to resolve types in examples
     "ruff>=0.4",
     "mypy>=1.10",
 ]
