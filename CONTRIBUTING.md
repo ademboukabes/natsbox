@@ -72,9 +72,9 @@ If you are adding a new feature, please include tests that cover the new functio
 
 ## 6. Architecture & Roadmap
 
-Before contributing large architectural changes, please check our roadmap in `README.md` and read the `implementation_plan.md` artifact to understand the current technical direction (e.g., the upcoming V2 Logical Replication Relay). 
+Before contributing large architectural changes, please check our roadmap in `README.md` to understand the current technical direction (e.g., the upcoming V2 Logical Replication Relay). 
 
 If you want to work on a major feature, consider opening an issue first to discuss the design with the maintainers.
 
 ---
-Thank you for your contributions! 🚀
+Thank you for your contributions! 

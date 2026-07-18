@@ -192,7 +192,6 @@ make test
 
 **V2 — WAL Tailing (Logical Replication)**
 We are planning to implement a sub-millisecond latency relay using Postgres logical replication (`pgoutput`) via `psycopg3`. This will replace the polling mechanism for high-throughput systems.
-See the full technical roadmap in [implementation_plan.md](implementation_plan.md).
 
 ## License
 
