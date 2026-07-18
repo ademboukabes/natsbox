@@ -2,9 +2,11 @@
 
 **Transactional Outbox Pattern for Python — PostgreSQL + NATS JetStream**
 
+[![CI](https://github.com/ademboukabes/natsbox/actions/workflows/ci.yml/badge.svg)](https://github.com/ademboukabes/natsbox/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/nats-outbox.svg)](https://pypi.org/project/nats-outbox/)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/ademboukabes/natsbox/actions/workflows/ci.yml/badge.svg)](https://github.com/ademboukabes/natsbox/actions/workflows/ci.yml)
+[![Typed: strict](https://img.shields.io/badge/typing-strict%20mypy%20%2B%20pyright-informational)](pyrightconfig.json)
 
 ## What problem does this solve?
 
