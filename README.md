@@ -1,4 +1,4 @@
-# nats-outbox
+# natsbox
 
 **Transactional Outbox Pattern for Python — PostgreSQL + NATS JetStream**
 
@@ -18,7 +18,7 @@ These two operations touch two different systems with no shared distributed tran
 - Event published → DB rollback → **phantom event** (consumers react to nothing)
 - NATS temporarily down → event lost or duplicated without a retry mechanism
 
-**nats-outbox** solves this with the [Transactional Outbox Pattern](https://microservices.io/patterns/data/transactional-outbox.html):
+**natsbox** solves this with the [Transactional Outbox Pattern](https://microservices.io/patterns/data/transactional-outbox.html):
 
 > Write events to a dedicated `outbox_events` table **in the same SQL transaction** as your domain data. A separate relay process reads this table and publishes events reliably to NATS JetStream.
 
@@ -38,7 +38,7 @@ These two operations touch two different systems with no shared distributed tran
 ## Quick Start
 
 ```bash
-pip install nats-outbox[cli,all]
+pip install natsbox[cli,all]
 ```
 
 ```python
@@ -65,7 +65,7 @@ Start the relay:
 ```bash
 OUTBOX_DATABASE_URL=postgresql+asyncpg://... \
 OUTBOX_NATS_URL=nats://localhost:4222 \
-nats-outbox relay start
+natsbox relay start
 ```
 
 ## Architecture
