@@ -41,7 +41,7 @@ These two operations touch two different systems with no shared distributed tran
 ## Quick Start
 
 ```bash
-pip install natsbox[cli,all]
+pip install nats-outbox[cli,all]
 ```
 
 ```python
@@ -68,7 +68,7 @@ Start the relay:
 ```bash
 OUTBOX_DATABASE_URL=postgresql+asyncpg://... \
 OUTBOX_NATS_URL=nats://localhost:4222 \
-natsbox relay start
+nats-outbox relay start
 ```
 
 ## Architecture
