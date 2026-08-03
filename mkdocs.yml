@@ -66,8 +66,16 @@ markdown_extensions:
 
 nav:
   - "Home": index.md
-  - "Guides":
-      - "Alembic Integration": alembic.md
+  - "Concepts":
+      - "The Outbox Pattern": concepts/outbox-pattern.md
+      - "Architecture": concepts/architecture.md
+      - "Table Schema": concepts/table-schema.md
+  - "How-to Guides":
+      - "Integration Guide": guides/integration-guide.md
+      - "Alembic Integration": guides/alembic-integration.md
+      - "Consumer Deduplication (Inbox)": guides/consumer-deduplication.md
+      - "Recovering Dead Letters": guides/recovering-dead-letters.md
+      - "Deploying the Relay": guides/deploying-the-relay.md
   - "API Reference":
       - "Core (Outbox/Inbox)": api/core.md
       - "Relay": api/relay.md
