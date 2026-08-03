@@ -76,6 +76,10 @@ nav:
       - "Consumer Deduplication (Inbox)": guides/consumer-deduplication.md
       - "Recovering Dead Letters": guides/recovering-dead-letters.md
       - "Deploying the Relay": guides/deploying-the-relay.md
+  - "Operations":
+      - "Configuration Reference": operations/configuration-reference.md
+      - "Relay Strategies": operations/relay-strategies.md
+      - "Monitoring": operations/monitoring.md
   - "API Reference":
       - "Core (Outbox/Inbox)": api/core.md
       - "Relay": api/relay.md
