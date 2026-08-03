@@ -1,0 +1,63 @@
+site_name: "nats-outbox"
+site_description: "Transactional Outbox Pattern for PostgreSQL + NATS JetStream"
+site_author: "Adem Boukabes"
+repo_name: "ademboukabes/natsbox"
+repo_url: "https://github.com/ademboukabes/natsbox"
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["."]
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+
+nav:
+  - "Home": index.md
+  - "Guides":
+      - "Alembic Integration": alembic.md
+  - "API Reference":
+      - "Core (Outbox/Inbox)": api/core.md
+      - "Relay": api/relay.md
+      - "Settings": api/settings.md

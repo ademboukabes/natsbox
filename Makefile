@@ -35,6 +35,12 @@ up: ## Start the local infrastructure (Postgres + NATS) via Docker Compose
 down: ## Stop the local infrastructure and remove containers
 	docker compose down
 
+docs-serve: ## Serve documentation locally with live-reload
+	.venv/bin/mkdocs serve
+
+docs-build: ## Build documentation statically to site/
+	.venv/bin/mkdocs build
+
 clean: ## Remove python cache files and virtual environment
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +

@@ -34,9 +34,17 @@ metrics = [
 cli = [
     "typer>=0.12",
 ]
+docs = [
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.25.0",
+    "mkdocs-include-markdown-plugin>=6.0.0",
+]
 all = [
     "prometheus-client>=0.20",
     "typer>=0.12",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.25.0",
+    "mkdocs-include-markdown-plugin>=6.0.0",
 ]
 dev = [
     "pytest>=8.0",
