@@ -44,7 +44,7 @@ from nats_outbox.settings import OutboxSettings
 
 try:
     from testcontainers.core.waiting_utils import (
-        LogMessageWaitStrategy,  # type: ignore[attr-defined]  # pyright: ignore
+        LogMessageWaitStrategy,  # type: ignore[attr-defined, unused-ignore]  # pyright: ignore
     )
 
     _HAS_LOG_WAIT_STRATEGY = True

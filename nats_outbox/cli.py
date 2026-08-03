@@ -253,9 +253,7 @@ async def _run_requeue(event_id: str | None, dry_run: bool) -> int:
 
             if dry_run:
                 count_result = await session.execute(
-                    select(func.count())
-                    .select_from(OutboxEvent)
-                    .where(*where_clauses)
+                    select(func.count()).select_from(OutboxEvent).where(*where_clauses)
                 )
                 return int(count_result.scalar_one())
 

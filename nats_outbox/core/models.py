@@ -273,7 +273,6 @@ for _ddl in (_DDL_CREATE_FUNCTION, _DDL_DROP_TRIGGER, _DDL_CREATE_TRIGGER):
     )
 
 
-
 async def create_tables(engine: Any) -> None:
     """
     Create all tables defined in this module and in core.inbox.

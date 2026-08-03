@@ -656,11 +656,8 @@ def test_backoff_jitter_stays_within_bounds() -> None:
 
         for _ in range(100):
             result = _backoff(retry_count)
-            assert result >= 1.0, (
-                f"_backoff({retry_count}) returned {result} — must be >= 1.0"
-            )
+            assert result >= 1.0, f"_backoff({retry_count}) returned {result} — must be >= 1.0"
             assert result <= upper * 1.01, (  # 1% tolerance for float arithmetic
                 f"_backoff({retry_count}) returned {result}, "
                 f"expected <= {upper} (base={base_value}, cap=300)"
             )
-
