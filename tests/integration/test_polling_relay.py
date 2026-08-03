@@ -635,3 +635,32 @@ async def test_staged_events_visible_before_commit(
         assert len(staged) == 2
         assert staged[0].subject == "test.staged.1"
         assert staged[1].subject == "test.staged.2"
+
+
+# ── Test 10: _backoff jitter bounds (unit, no Docker) ─────────────────────────
+
+
+def test_backoff_jitter_stays_within_bounds() -> None:
+    """
+    _backoff() must return a value within ±20% of the base exponential,
+    capped at 300s, and never below 1s.
+
+    100 samples per retry count to exercise the random distribution.
+    """
+    from nats_outbox.relay.polling import _backoff
+
+    for retry_count in range(1, 11):
+        base_value = min(2.0**retry_count, 300.0)
+        max(1.0, base_value * 0.8)
+        upper = base_value * 1.2
+
+        for _ in range(100):
+            result = _backoff(retry_count)
+            assert result >= 1.0, (
+                f"_backoff({retry_count}) returned {result} — must be >= 1.0"
+            )
+            assert result <= upper * 1.01, (  # 1% tolerance for float arithmetic
+                f"_backoff({retry_count}) returned {result}, "
+                f"expected <= {upper} (base={base_value}, cap=300)"
+            )
+

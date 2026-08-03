@@ -29,6 +29,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    DDL,
     BigInteger,
     CheckConstraint,
     DateTime,
@@ -37,6 +38,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
     func,
     text,
 )
@@ -229,6 +231,47 @@ class OutboxEvent(Base):
             f"<OutboxEvent id={self.id} event_id={self.event_id} "
             f"subject={self.subject!r} status={self.status} retries={self.retry_count}>"
         )
+
+
+# ── updated_at trigger ────────────────────────────────────────────────────────
+# Keep test environments (which use create_tables()) consistent with production
+# (which uses migrations/001_create_outbox_events.sql). Without this, tests
+# would not exercise the server-side trigger, masking bugs where direct SQL
+# UPDATEs (e.g. from psql) don't update updated_at via SQLAlchemy's onupdate.
+
+_DDL_CREATE_FUNCTION = DDL(  # type: ignore[no-untyped-call]
+    """
+    CREATE OR REPLACE FUNCTION _outbox_set_updated_at()
+    RETURNS TRIGGER LANGUAGE plpgsql AS $$
+    BEGIN
+        NEW.updated_at = now();
+        RETURN NEW;
+    END;
+    $$
+    """
+)
+_DDL_DROP_TRIGGER = DDL(  # type: ignore[no-untyped-call]
+    "DROP TRIGGER IF EXISTS trg_outbox_events_updated_at ON outbox_events"
+)
+_DDL_CREATE_TRIGGER = DDL(  # type: ignore[no-untyped-call]
+    """
+    CREATE TRIGGER trg_outbox_events_updated_at
+        BEFORE UPDATE ON outbox_events
+        FOR EACH ROW
+        EXECUTE FUNCTION _outbox_set_updated_at()
+    """
+)
+
+# execute_if(dialect="postgresql") is a no-op on other dialects (e.g. SQLite
+# used in lightweight unit tests), so this never breaks non-Postgres setups.
+# asyncpg requires one statement per DDL call — hence three separate listeners.
+for _ddl in (_DDL_CREATE_FUNCTION, _DDL_DROP_TRIGGER, _DDL_CREATE_TRIGGER):
+    event.listen(
+        OutboxEvent.__table__,
+        "after_create",
+        _ddl.execute_if(dialect="postgresql"),
+    )
+
 
 
 async def create_tables(engine: Any) -> None:

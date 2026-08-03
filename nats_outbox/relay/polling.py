@@ -85,6 +85,7 @@ WAL tailing:
 
 import asyncio
 import logging
+import random
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Optional
@@ -369,22 +370,26 @@ class PollingRelay(BaseRelay):
 
 def _backoff(retry_count: int, base: float = 2.0, cap: float = 300.0) -> float:
     """
-    Exponential backoff with a hard cap.
+    Exponential backoff with a hard cap and ±20% uniform jitter.
 
-    retry_count=1 →   2s
-    retry_count=2 →   4s
-    retry_count=3 →   8s
-    retry_count=4 →  16s
-    retry_count=5 →  32s
-    ...
-    retry_count=8 → 256s
-    retry_count=9 → 300s (capped)
+    Base values (before jitter):
+        retry_count=1 →   ~2s
+        retry_count=2 →   ~4s
+        retry_count=3 →   ~8s
+        retry_count=4 →  ~16s
+        retry_count=5 →  ~32s
+        ...
+        retry_count=9 → ~300s (capped)
 
-    No jitter is added here. If you run multiple relay instances, SKIP LOCKED
-    provides natural distribution. For single-instance deployments with burst
-    failures, consider adding ±10% jitter.
+    Jitter rationale: without jitter, a burst failure (e.g. NATS outage) that
+    affects many events simultaneously causes a thundering herd when NATS
+    recovers — all events re-enter the queue at the exact same second.
+    ±20% uniform jitter spreads the retry wave across a ~40% window, smoothing
+    the recovery load on NATS and Postgres. Minimum effective backoff is 1s.
     """
-    return min(base**retry_count, cap)
+    raw = min(base**retry_count, cap)
+    jitter = raw * random.uniform(-0.2, 0.2)
+    return max(1.0, raw + jitter)
 
 
 def _truncate(s: str, max_len: int = 2000) -> str:

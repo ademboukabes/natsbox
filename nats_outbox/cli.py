@@ -9,6 +9,9 @@ import contextlib
 import logging
 import signal
 import sys
+import uuid as _uuid
+from datetime import UTC, datetime
+from typing import Any
 
 try:
     import typer
@@ -104,6 +107,57 @@ def cleanup(
     typer.echo(f"Cleanup complete: {deleted} row(s) deleted.")
 
 
+@relay_app.command("requeue")
+def requeue(
+    event_id: str | None = typer.Option(
+        None,
+        "--event-id",
+        "-e",
+        help=(
+            "UUID of a specific failed event to requeue. "
+            "If omitted, ALL events with status='failed' are requeued."
+        ),
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Print how many rows would be affected without modifying the database.",
+    ),
+    log_level: str = typer.Option("INFO", "--log-level", "-l"),
+) -> None:
+    """
+    Reset dead-lettered (status='failed') events back to 'pending' for retry.
+
+    Always run with --dry-run first to see how many events are affected.
+
+    Examples:
+
+        # See how many failed events exist:
+        nats-outbox relay requeue --dry-run
+
+        # Requeue a single event by UUID:
+        nats-outbox relay requeue --event-id 550e8400-e29b-41d4-a716-446655440000
+
+        # Requeue all failed events:
+        nats-outbox relay requeue
+    """
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper(), logging.INFO),
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    if event_id is not None:
+        try:
+            _uuid.UUID(event_id)
+        except ValueError:
+            typer.echo(f"Invalid UUID: {event_id!r}", err=True)
+            raise typer.Exit(code=1) from None
+
+    count = asyncio.run(_run_requeue(event_id=event_id, dry_run=dry_run))
+    action = "Would requeue" if dry_run else "Requeued"
+    typer.echo(f"{action} {count} event(s).")
+
+
 # ── Async implementations ──────────────────────────────────────────────────────
 
 
@@ -166,6 +220,59 @@ async def _run_cleanup() -> int:
         return await relay.run_cleanup()
     finally:
         await nc.close()
+        await engine.dispose()
+
+
+async def _run_requeue(event_id: str | None, dry_run: bool) -> int:
+    """
+    Reset dead-lettered events back to pending.
+
+    Parameters
+    ----------
+    event_id:
+        If provided, only requeue the event with this UUID.
+        If None, requeue ALL events with status='failed'.
+    dry_run:
+        If True, count matching rows without modifying them.
+
+    Returns the number of rows affected (or that would be affected).
+    """
+    from sqlalchemy import func, select, update
+
+    settings = OutboxSettings()  # type: ignore[call-arg]
+    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    from .core.models import OutboxEvent
+
+    try:
+        async with session_factory() as session, session.begin():
+            where_clauses: list[Any] = [OutboxEvent.status == "failed"]
+            if event_id is not None:
+                where_clauses.append(OutboxEvent.event_id == _uuid.UUID(event_id))
+
+            if dry_run:
+                count_result = await session.execute(
+                    select(func.count())
+                    .select_from(OutboxEvent)
+                    .where(*where_clauses)
+                )
+                return int(count_result.scalar_one())
+
+            result = await session.execute(
+                update(OutboxEvent)
+                .where(*where_clauses)
+                .values(
+                    status="pending",
+                    retry_count=0,
+                    scheduled_at=datetime.now(tz=UTC),
+                    last_error=None,
+                )
+                .returning(OutboxEvent.id)
+            )
+            rows = result.fetchall()
+            return len(rows)
+    finally:
         await engine.dispose()
 
 
