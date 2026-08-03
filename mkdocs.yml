@@ -6,29 +6,41 @@ repo_url: "https://github.com/ademboukabes/natsbox"
 
 theme:
   name: material
+  custom_dir: docs/overrides # Optional for future CSS
+  logo: material/database-sync
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: Fira Code
   features:
+    - navigation.instant
+    - navigation.tracking
     - navigation.tabs
-    - navigation.indexes
+    - navigation.tabs.sticky
+    - navigation.sections
     - navigation.top
+    - toc.integrate
     - search.suggest
     - search.highlight
     - content.code.copy
+    - content.code.annotate
   palette:
-    # Palette toggle for light mode
+    # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: custom
-      accent: custom
+      primary: indigo
+      accent: blue
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-night
         name: Switch to dark mode
-    # Palette toggle for dark mode
+    # Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: custom
-      accent: custom
+      primary: indigo
+      accent: blue
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-sunny
         name: Switch to light mode
 
 plugins:
