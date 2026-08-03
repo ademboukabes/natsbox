@@ -6,7 +6,6 @@ repo_url: "https://github.com/ademboukabes/natsbox"
 
 theme:
   name: material
-  custom_dir: docs/overrides # Optional for future CSS
   logo: material/database-sync
   icon:
     repo: fontawesome/brands/github
