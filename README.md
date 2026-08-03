@@ -178,10 +178,158 @@ OUTBOX_JETSTREAM_DEDUP_WINDOW=120 # match your stream's DuplicateWindow
 OUTBOX_METRICS_PORT=9090          # 0 = disabled
 ```
 
+## Integration Guide
+
+### Step 1 — Install
+
+```bash
+pip install nats-outbox[cli,all]
+```
+
+### Step 2 — Create the database table
+
+**Option A — Raw SQL (fastest)**
+
+```bash
+psql $DATABASE_URL -f https://raw.githubusercontent.com/ademboukabes/natsbox/main/migrations/001_create_outbox_events.sql
+```
+
+Or run the local file if you have the repo cloned:
+
+```bash
+psql $DATABASE_URL -f migrations/001_create_outbox_events.sql
+```
+
+**Option B — SQLAlchemy (programmatic, e.g. in a FastAPI lifespan)**
+
+```python
+from nats_outbox.core.models import create_tables
+from sqlalchemy.ext.asyncio import create_async_engine
+
+engine = create_async_engine("postgresql+asyncpg://...")
+await create_tables(engine)  # creates outbox_events + inbox_events + trigger
+```
+
+**Option C — Alembic** — see [docs/alembic.md](docs/alembic.md).
+
+### Step 3 — Write events in your business logic
+
+Replace direct `session.commit()` with `outbox_transaction`:
+
+```python
+from nats_outbox.core.outbox import outbox_transaction
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def create_order(session: AsyncSession, user_id: int, amount: float):
+    async with outbox_transaction(session) as tx:
+        order = Order(user_id=user_id, amount=amount)
+        tx.add(order)
+        await session.flush()  # needed to get order.id before commit
+
+        tx.publish_event(
+            subject="order.created",
+            payload={"order_id": str(order.id), "amount": amount},
+            aggregate_id=str(order.id),
+            aggregate_type="Order",
+        )
+    # order row + outbox event committed atomically — relay takes it from here
+```
+
+> **Note:** Do **not** call `session.commit()` yourself — `outbox_transaction` does it. If an exception occurs inside the block, both the order row and the event are rolled back.
+
+### Step 4 — Configure the NATS JetStream stream
+
+The relay publishes to NATS subjects. You must have a stream that covers those subjects:
+
+```bash
+# Using the nats CLI
+nats stream add ORDERS \
+  --subjects "order.*" \
+  --storage file \
+  --retention limits \
+  --max-age 24h \
+  --dupe-window 2m   # must match OUTBOX_JETSTREAM_DEDUP_WINDOW
+```
+
+### Step 5 — Start the relay process
+
+The relay is a separate long-running process. Run it alongside your application:
+
+```bash
+OUTBOX_DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/myapp \
+OUTBOX_NATS_URL=nats://localhost:4222 \
+nats-outbox relay start
+```
+
+In **Docker Compose**, add a relay service:
+
+```yaml
+services:
+  relay:
+    image: python:3.12-slim
+    command: nats-outbox relay start
+    environment:
+      OUTBOX_DATABASE_URL: postgresql+asyncpg://user:pass@db:5432/myapp
+      OUTBOX_NATS_URL: nats://nats:4222
+```
+
+In **Kubernetes**, deploy it as a separate `Deployment` (1 replica minimum, scale horizontally for throughput — `SELECT FOR UPDATE SKIP LOCKED` handles concurrent relay instances safely).
+
+### Step 6 — (Optional) Consumer-side deduplication
+
+If a consumer receives the same event twice (e.g. relay crash after publish but before marking as published), use the Inbox Pattern to deduplicate:
+
+```python
+from nats_outbox.core.inbox import InboxDeduplicator
+import uuid
+
+async def handle_order_created(session: AsyncSession, event_id: uuid.UUID, payload: dict):
+    async with session.begin():
+        dedup = InboxDeduplicator(session, consumer_group="billing-service")
+        if await dedup.is_duplicate(event_id):
+            return  # already processed — skip safely
+
+        # ... your business logic here ...
+        # The inbox row and your business effect commit atomically
+```
+
+### Step 7 — (Optional) Recover dead-lettered events
+
+If an event fails `OUTBOX_MAX_RETRIES` times (e.g. a bad NATS subject with no stream), it is dead-lettered (`status=failed`). Recover with:
+
+```bash
+# Preview first
+nats-outbox relay requeue --dry-run
+
+# Requeue all failed events
+nats-outbox relay requeue
+
+# Requeue a specific event
+nats-outbox relay requeue --event-id 550e8400-e29b-41d4-a716-446655440000
+```
+
+### Step 8 — (Optional) Prometheus metrics
+
+```bash
+OUTBOX_METRICS_PORT=9090 nats-outbox relay start
+```
+
+Metrics exposed at `http://localhost:9090/metrics`:
+
+| Metric | Type | Alert when |
+|---|---|---|
+| `outbox_events_pending` | Gauge | > threshold for > N minutes |
+| `outbox_events_published_total` | Counter | — |
+| `outbox_events_failed_total` | Counter | > 0 |
+| `outbox_publish_latency_seconds` | Histogram | p99 > SLA |
+
+---
+
 ## Examples
 
 See the `examples/` directory for a complete working FastAPI integration:
 - [examples/fastapi_app.py](examples/fastapi_app.py)
+
 
 ## Running Integration Tests
 
