@@ -80,6 +80,8 @@ nav:
       - "Configuration Reference": operations/configuration-reference.md
       - "Relay Strategies": operations/relay-strategies.md
       - "Monitoring": operations/monitoring.md
+  - "Comparisons": comparisons.md
+  - "Roadmap": roadmap.md
   - "API Reference":
       - "Core (Outbox/Inbox)": api/core.md
       - "Relay": api/relay.md
